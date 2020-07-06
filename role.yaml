@@ -24,7 +24,6 @@ Resources:
   CrossAccountRole:
     Type: AWS::IAM::Role
     Properties:
-      Path: /
       RoleName: CrossAccountRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -36,11 +35,25 @@ Resources:
             Action:
               - "sts:AssumeRole"
 
+  ListPolicies:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: ListRolePolicies
+      Roles:
+        - !Ref CrossAccountRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "iam:ListAttachedRolePolicies"
+            Resource: !GetAtt CrossAccountRole.Arn
+
   BlockPublicRDPPolicy:
     Condition: ShouldBlockPublicRDP
-    Type: AWS::IAM::Policy
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: BlockPublicRDP
+      ManagedPolicyName: BlockPublicRDP
       Roles:
         - !Ref CrossAccountRole
       PolicyDocument:
@@ -51,9 +64,8 @@ Resources:
               - "ec2:RevokeSecurityGroupEgress"
               - "ec2:RevokeSecurityGroupIngress"
             Resource: "*"
-            Condition:
-              StringEquals:
-                ec2:ResourceTag/Owner: !If
-                  - RestrictedByTags
-                  - !Ref SecurityGroupTagValue
-                  - !Ref AWS::NoValue
+            Condition: !If
+              - RestrictedByTags
+              - StringEquals:
+                  ec2:ResourceTag/Owner: !Ref SecurityGroupTagValue
+              - !Ref AWS::NoValue
