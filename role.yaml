@@ -1,0 +1,59 @@
+Parameters:
+  MasterAccount:
+    AllowedPattern: ^\d{12}$
+    Type: String
+  BlockPublicRDP:
+    AllowedValues: ["Enabled", "Disabled"]
+    ConstraintDescription: Must be Enabled or Disabled
+    Default: Disabled
+    Type: String
+  SecurityTagRestriction:
+    AllowedValues: ["Enabled", "Disabled"]
+    ConstraintDescription: Must be Enabled or Disabled
+    Default: Disabled
+    Type: String
+  SecurityGroupTagValue:
+    Type: String
+    Default: Disabled
+
+Conditions:
+  ShouldBlockPublicRDP: !Equals [!Ref BlockPublicRDP, "Enabled"]
+  RestrictedByTags: !Equals [!Ref SecurityTagRestriction, "Enabled"]
+
+Resources:
+  CrossAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: CrossAccountRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${MasterAccount}:root"
+            Action:
+              - "sts:AssumeRole"
+
+  BlockPublicRDPPolicy:
+    Condition: ShouldBlockPublicRDP
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: BlockPublicRDP
+      Roles:
+        - !Ref CrossAccountRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "ec2:RevokeSecurityGroupEgress"
+              - "ec2:RevokeSecurityGroupIngress"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                ec2:ResourceTag/Owner: !If
+                  - RestrictedByTags
+                  - !Ref SecurityGroupTagValue
+                  - !Ref AWS::NoValue

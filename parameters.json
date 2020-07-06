@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey": "MasterAccount",
+        "ParameterValue": "111122223333"
+    },
+    {
+        "ParameterKey": "BlockPublicRDP",
+        "ParameterValue": "Enabled"
+    },
+    {
+        "ParameterKey": "SecurityTagRestriction",
+        "ParameterValue": "Disabled"
+    },
+    {
+        "ParameterKey": "SecurityGroupTagValue",
+        "ParameterValue": "JoshArmi"
+    }
+]
